@@ -1,8 +1,35 @@
 services:
+  proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        TARGETARCH: ${TARGETARCH:-arm64}
+    ports:
+      - "7700:7700"
+      - "9090:9090"
+    environment:
+      MEILI_HA_CONFIG: /etc/meili-ha/config.yaml
+    volumes:
+      - ./test-config.yaml:/etc/meili-ha/config.yaml:ro
+    depends_on:
+      meili-primary:
+        condition: service_healthy
+      meili-replica-1:
+        condition: service_healthy
+      meili-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7700/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
+
   meili-primary:
     image: getmeili/meilisearch:v1.12
     ports:
-      - "7700:7700"
+      - "7710:7700"
     environment:
       MEILI_ENV: development
       MEILI_NO_ANALYTICS: "true"
@@ -17,7 +44,7 @@ services:
   meili-replica-1:
     image: getmeili/meilisearch:v1.12
     ports:
-      - "7701:7700"
+      - "7711:7700"
     environment:
       MEILI_ENV: development
       MEILI_NO_ANALYTICS: "true"
@@ -32,7 +59,7 @@ services:
   meili-replica-2:
     image: getmeili/meilisearch:v1.12
     ports:
-      - "7702:7700"
+      - "7712:7700"
     environment:
       MEILI_ENV: development
       MEILI_NO_ANALYTICS: "true"

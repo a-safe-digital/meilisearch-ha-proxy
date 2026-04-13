@@ -32,8 +32,13 @@ func (p *Proxy) SetReplicator(r *replication.Replicator) {
 }
 
 // SetAdminHandler sets the handler for admin requests.
+// If the handler is an *AdminHandler, configures the fallback to forward
+// unhandled admin requests (tasks, keys, stats, version) to primary.
 func (p *Proxy) SetAdminHandler(h http.Handler) {
 	p.adminHandler = h
+	if admin, ok := h.(*AdminHandler); ok {
+		admin.SetFallback(http.HandlerFunc(p.forwardToPrimary))
+	}
 }
 
 // ServeHTTP routes requests based on classification.
@@ -131,7 +136,10 @@ func (p *Proxy) handleAdmin(w http.ResponseWriter, r *http.Request) {
 		p.adminHandler.ServeHTTP(w, r)
 		return
 	}
-	// Default: forward to primary
+	p.forwardToPrimary(w, r)
+}
+
+func (p *Proxy) forwardToPrimary(w http.ResponseWriter, r *http.Request) {
 	primary := p.checker.Primary()
 	if primary != nil {
 		p.forwardRequest(w, r, primary)

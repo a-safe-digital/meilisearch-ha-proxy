@@ -12,6 +12,7 @@ import (
 type AdminHandler struct {
 	checker    *health.Checker
 	replicator *replication.Replicator
+	fallback   http.Handler // forwards unhandled admin requests to primary
 }
 
 // NewAdminHandler creates an admin handler.
@@ -20,6 +21,12 @@ func NewAdminHandler(checker *health.Checker, replicator *replication.Replicator
 		checker:    checker,
 		replicator: replicator,
 	}
+}
+
+// SetFallback sets a handler for admin requests not handled by the proxy
+// (tasks, keys, stats, version — forwarded to primary).
+func (a *AdminHandler) SetFallback(h http.Handler) {
+	a.fallback = h
 }
 
 // ServeHTTP routes admin requests.
@@ -33,6 +40,10 @@ func (a *AdminHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.handleClusterStatus(w, r)
 	default:
 		// Forward non-proxy admin requests (tasks, keys, stats, version) to primary
+		if a.fallback != nil {
+			a.fallback.ServeHTTP(w, r)
+			return
+		}
 		http.Error(w, `{"message":"not found","code":"not_found"}`, http.StatusNotFound)
 	}
 }
