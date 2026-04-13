@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,7 +51,6 @@ type HealthConfig struct {
 type ReplicConfig struct {
 	Timeout        time.Duration `yaml:"timeout"`
 	MaxPayloadSize string        `yaml:"max_payload_size"`
-	BufferDir      string        `yaml:"buffer_dir"`
 }
 
 // Defaults returns a Config populated with sensible defaults.
@@ -68,7 +68,6 @@ func Defaults() Config {
 		Replication: ReplicConfig{
 			Timeout:        30 * time.Second,
 			MaxPayloadSize: "200MB",
-			BufferDir:      "/tmp/meili-ha-buffer",
 		},
 	}
 }
@@ -143,6 +142,38 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// ParseSize converts a human-readable size string (e.g., "200MB", "1GB")
+// into bytes. Returns 0 if the string is empty or unparseable.
+func ParseSize(s string) int64 {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+
+	s = strings.ToUpper(s)
+
+	multiplier := int64(1)
+	switch {
+	case strings.HasSuffix(s, "GB"):
+		multiplier = 1024 * 1024 * 1024
+		s = strings.TrimSuffix(s, "GB")
+	case strings.HasSuffix(s, "MB"):
+		multiplier = 1024 * 1024
+		s = strings.TrimSuffix(s, "MB")
+	case strings.HasSuffix(s, "KB"):
+		multiplier = 1024
+		s = strings.TrimSuffix(s, "KB")
+	case strings.HasSuffix(s, "B"):
+		s = strings.TrimSuffix(s, "B")
+	}
+
+	val, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return val * multiplier
+}
+
 func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("MEILI_HA_LISTEN"); v != "" {
 		cfg.Listen = v
@@ -153,10 +184,6 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("MEILI_HA_LOG_LEVEL"); v != "" {
 		cfg.LogLevel = v
 	}
-	if v := os.Getenv("MEILI_HA_BUFFER_DIR"); v != "" {
-		cfg.Replication.BufferDir = v
-	}
-
 	// MEILI_HA_MASTER_KEY overrides api_key on all nodes (used with Kubernetes secretKeyRef)
 	if v := os.Getenv("MEILI_HA_MASTER_KEY"); v != "" {
 		for i := range cfg.Nodes {

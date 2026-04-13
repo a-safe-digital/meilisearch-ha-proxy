@@ -155,3 +155,17 @@ func CaptureWrite(r *http.Request) ([]byte, error) {
 	r.Body = io.NopCloser(bytes.NewReader(body))
 	return body, nil
 }
+
+// CaptureWriteFromReader reads from the given reader (which may be size-limited)
+// and replaces r.Body so the request can still be forwarded.
+func CaptureWriteFromReader(r *http.Request, reader io.Reader) ([]byte, error) {
+	if r.Body == nil || reader == nil {
+		return nil, nil
+	}
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("read request body: %w", err)
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	return body, nil
+}

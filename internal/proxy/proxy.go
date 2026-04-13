@@ -9,21 +9,33 @@ import (
 	"time"
 
 	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/health"
+	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/metrics"
 	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/replication"
 )
 
 // Proxy is the main HTTP handler that routes requests to MeiliSearch backends.
 type Proxy struct {
-	checker      *health.Checker
-	roundRobin   atomic.Uint64
-	replicator   *replication.Replicator
-	adminHandler http.Handler
-	httpClient   *http.Client
+	checker        *health.Checker
+	roundRobin     atomic.Uint64
+	replicator     *replication.Replicator
+	adminHandler   http.Handler
+	httpClient     *http.Client
+	maxPayloadSize int64 // 0 = unlimited
+}
+
+// Option configures the Proxy.
+type Option func(*Proxy)
+
+// WithMaxPayloadSize sets the maximum request body size for write requests.
+// Bodies larger than this are rejected with 413 Payload Too Large.
+// A value of 0 means unlimited (not recommended for production).
+func WithMaxPayloadSize(n int64) Option {
+	return func(p *Proxy) { p.maxPayloadSize = n }
 }
 
 // New creates a Proxy with the given health checker.
-func New(checker *health.Checker) *Proxy {
-	return &Proxy{
+func New(checker *health.Checker, opts ...Option) *Proxy {
+	p := &Proxy{
 		checker: checker,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second,
@@ -33,6 +45,10 @@ func New(checker *health.Checker) *Proxy {
 			},
 		},
 	}
+	for _, o := range opts {
+		o(p)
+	}
+	return p
 }
 
 // SetReplicator sets the write replicator.
@@ -53,12 +69,17 @@ func (p *Proxy) SetAdminHandler(h http.Handler) {
 // ServeHTTP routes requests based on classification.
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reqType := Classify(r)
+	m := metrics.Get()
+	m.RecordRequest(reqType.String())
+	start := time.Now()
 
 	switch reqType {
 	case ReadRequest:
 		p.handleRead(w, r)
+		m.RecordLatency("read", time.Since(start))
 	case WriteRequest:
 		p.handleWrite(w, r)
+		m.RecordLatency("write", time.Since(start))
 	case AdminRequest:
 		p.handleAdmin(w, r)
 	}
@@ -67,6 +88,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (p *Proxy) handleRead(w http.ResponseWriter, r *http.Request) {
 	nodes := p.checker.HealthyNodes()
 	if len(nodes) == 0 {
+		metrics.Get().RecordError("no_healthy_nodes")
 		http.Error(w, `{"message":"no healthy nodes available","code":"service_unavailable"}`, http.StatusServiceUnavailable)
 		return
 	}
@@ -89,13 +111,27 @@ func (p *Proxy) handleWrite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Enforce MaxPayloadSize to prevent memory exhaustion
+	if p.maxPayloadSize > 0 && r.ContentLength > p.maxPayloadSize {
+		http.Error(w, `{"message":"payload too large","code":"payload_too_large"}`, http.StatusRequestEntityTooLarge)
+		return
+	}
+
 	// Capture request body for replication before forwarding
 	var capturedBody []byte
 	if p.replicator != nil {
-		body, err := replication.CaptureWrite(r)
+		var bodyReader io.Reader = r.Body
+		if p.maxPayloadSize > 0 {
+			bodyReader = io.LimitReader(r.Body, p.maxPayloadSize+1)
+		}
+		body, err := replication.CaptureWriteFromReader(r, bodyReader)
 		if err != nil {
 			slog.Error("capture write body", "error", err)
 			http.Error(w, `{"message":"internal error","code":"internal_error"}`, http.StatusInternalServerError)
+			return
+		}
+		if p.maxPayloadSize > 0 && int64(len(body)) > p.maxPayloadSize {
+			http.Error(w, `{"message":"payload too large","code":"payload_too_large"}`, http.StatusRequestEntityTooLarge)
 			return
 		}
 		capturedBody = body
@@ -195,6 +231,7 @@ func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request, node *hea
 	resp, err := p.httpClient.Do(outReq)
 	if err != nil {
 		slog.Error("forward request", "url", node.URL, "error", err)
+		metrics.Get().RecordError("bad_gateway")
 		http.Error(w, `{"message":"backend unavailable","code":"service_unavailable"}`, http.StatusBadGateway)
 		return
 	}
