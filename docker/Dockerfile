@@ -14,8 +14,10 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     -o /bin/meili-ha-proxy ./cmd/meili-ha-proxy/
 
 FROM --platform=${TARGETPLATFORM} alpine:3.20
-RUN apk --no-cache add ca-certificates wget
+RUN apk --no-cache add ca-certificates && \
+    adduser -D -H -u 65534 proxy
 COPY --from=builder /bin/meili-ha-proxy /meili-ha-proxy
 
+USER proxy
 EXPOSE 7700 9090
 ENTRYPOINT ["/meili-ha-proxy"]

@@ -64,8 +64,8 @@ func TestFailover_PromotesReplicaWhenPrimaryDies(t *testing.T) {
 	}
 
 	// Old primary should be demoted to replica
-	if nodes[0].Role != "replica" {
-		t.Errorf("expected old primary demoted to replica, got %s", nodes[0].Role)
+	if nodes[0].GetRole() != "replica" {
+		t.Errorf("expected old primary demoted to replica, got %s", nodes[0].GetRole())
 	}
 
 	if !fm.IsFailedOver() {
@@ -130,8 +130,8 @@ func TestFailover_NoHealthyReplica(t *testing.T) {
 	fm.Evaluate()
 
 	// Primary should remain unchanged (still meili-0, just unhealthy)
-	if nodes[0].Role != "primary" {
-		t.Errorf("expected primary role unchanged when no replica available, got %s", nodes[0].Role)
+	if nodes[0].GetRole() != "primary" {
+		t.Errorf("expected primary role unchanged when no replica available, got %s", nodes[0].GetRole())
 	}
 	if fm.IsFailedOver() {
 		t.Error("expected failedOver=false when promotion failed")
@@ -174,8 +174,8 @@ func TestFailover_RecoverOriginalPrimary(t *testing.T) {
 	if !fm.IsFailedOver() {
 		t.Fatal("expected failover to occur")
 	}
-	if nodes[1].Role != "primary" {
-		t.Errorf("expected meili-1 promoted, got role=%s", nodes[1].Role)
+	if nodes[1].GetRole() != "primary" {
+		t.Errorf("expected meili-1 promoted, got role=%s", nodes[1].GetRole())
 	}
 
 	// Step 2: Original primary recovers (HTTP server responds OK)
@@ -194,11 +194,11 @@ func TestFailover_RecoverOriginalPrimary(t *testing.T) {
 	if fm.IsFailedOver() {
 		t.Error("expected failedOver=false after recovery")
 	}
-	if nodes[0].Role != "primary" {
-		t.Errorf("expected original primary restored, got role=%s", nodes[0].Role)
+	if nodes[0].GetRole() != "primary" {
+		t.Errorf("expected original primary restored, got role=%s", nodes[0].GetRole())
 	}
-	if nodes[1].Role != "replica" {
-		t.Errorf("expected promoted replica demoted back, got role=%s", nodes[1].Role)
+	if nodes[1].GetRole() != "replica" {
+		t.Errorf("expected promoted replica demoted back, got role=%s", nodes[1].GetRole())
 	}
 }
 

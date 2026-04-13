@@ -13,9 +13,9 @@ import (
 type Node struct {
 	URL    string
 	APIKey string
-	Role   string // "primary" or "replica"
 
 	mu                 sync.RWMutex
+	role               string // "primary" or "replica" — access via GetRole/SetRole
 	state              State
 	originalRole       string // role from config, used during failover recovery
 	consecutiveFails   int
@@ -32,7 +32,7 @@ func NewNode(url, apiKey, role string, unhealthyThreshold, healthyThreshold int)
 	return &Node{
 		URL:                url,
 		APIKey:             apiKey,
-		Role:               role,
+		role:               role,
 		originalRole:       role,
 		state:              Healthy,
 		unhealthyThreshold: unhealthyThreshold,
@@ -40,11 +40,18 @@ func NewNode(url, apiKey, role string, unhealthyThreshold, healthyThreshold int)
 	}
 }
 
+// GetRole returns the current role (thread-safe).
+func (n *Node) GetRole() string {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.role
+}
+
 // SetRole changes the node's role (used during failover).
 func (n *Node) SetRole(role string) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	n.Role = role
+	n.role = role
 }
 
 // OriginalRole returns the role from the initial configuration.

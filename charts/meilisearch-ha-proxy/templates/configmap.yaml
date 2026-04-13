@@ -13,7 +13,11 @@ data:
       {{- $fullname := include "meilisearch-ha-proxy.fullname" . }}
       {{- range $i := until (int .Values.meilisearch.replicas) }}
       - url: "http://{{ $fullname }}-meilisearch-{{ $i }}.{{ $fullname }}-meilisearch-headless.{{ $.Release.Namespace }}.svc.cluster.local:7700"
-        api_key: "{{ $.Values.meilisearch.masterKey }}"
+        {{- if and $.Values.meilisearch.masterKeySecret $.Values.meilisearch.masterKeySecret.name }}
+        api_key: "__MASTER_KEY_FROM_SECRET__"
+        {{- else }}
+        api_key: {{ $.Values.meilisearch.masterKey | quote }}
+        {{- end }}
         {{- if eq $i 0 }}
         role: primary
         {{- else }}
@@ -27,6 +31,9 @@ data:
       healthy_threshold: {{ .Values.healthCheck.healthyThreshold }}
     replication:
       timeout: {{ .Values.replication.timeout }}
+      {{- if .Values.replication.maxPayloadSize }}
+      max_payload_size: {{ .Values.replication.maxPayloadSize | quote }}
+      {{- end }}
     {{- if .Values.raft.enabled }}
     raft:
       data_dir: {{ .Values.raft.dataDir }}

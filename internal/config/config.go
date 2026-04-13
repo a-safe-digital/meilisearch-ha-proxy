@@ -157,6 +157,13 @@ func applyEnvOverrides(cfg *Config) {
 		cfg.Replication.BufferDir = v
 	}
 
+	// MEILI_HA_MASTER_KEY overrides api_key on all nodes (used with Kubernetes secretKeyRef)
+	if v := os.Getenv("MEILI_HA_MASTER_KEY"); v != "" {
+		for i := range cfg.Nodes {
+			cfg.Nodes[i].APIKey = v
+		}
+	}
+
 	// MEILI_HA_NODES format: "url1|key1|role1,url2|key2|role2"
 	if v := os.Getenv("MEILI_HA_NODES"); v != "" {
 		cfg.Nodes = nil

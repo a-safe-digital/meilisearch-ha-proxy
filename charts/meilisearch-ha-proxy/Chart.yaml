@@ -2,8 +2,8 @@ apiVersion: v2
 name: meilisearch-ha-proxy
 description: High-availability proxy for MeiliSearch CE with write replication and automatic failover
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.2.0
+appVersion: "0.2.0"
 maintainers:
   - name: a-safe-digital
 keywords:

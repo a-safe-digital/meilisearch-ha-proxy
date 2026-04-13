@@ -70,7 +70,7 @@ func (f *FailoverManager) tryPromote() {
 	}
 
 	for _, n := range f.checker.Nodes() {
-		if n.Role != "replica" || !n.IsHealthy() {
+		if n.GetRole() != "replica" || !n.IsHealthy() {
 			continue
 		}
 
@@ -114,7 +114,7 @@ func (f *FailoverManager) tryRecover(currentPrimary *Node) {
 	// but is currently a "replica" (was demoted during failover)
 	var originalPrimary *Node
 	for _, n := range f.checker.Nodes() {
-		if n.OriginalRole() == "primary" && n.Role == "replica" {
+		if n.OriginalRole() == "primary" && n.GetRole() == "replica" {
 			originalPrimary = n
 			break
 		}

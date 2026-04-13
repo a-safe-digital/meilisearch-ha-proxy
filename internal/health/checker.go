@@ -44,7 +44,7 @@ func (c *Checker) Nodes() []*Node {
 // Primary returns the current primary node, or nil if none.
 func (c *Checker) Primary() *Node {
 	for _, n := range c.nodes {
-		if n.Role == "primary" {
+		if n.GetRole() == "primary" {
 			return n
 		}
 	}
@@ -55,7 +55,7 @@ func (c *Checker) Primary() *Node {
 func (c *Checker) HealthyReplicas() []*Node {
 	var result []*Node
 	for _, n := range c.nodes {
-		if n.Role == "replica" && n.IsHealthy() {
+		if n.GetRole() == "replica" && n.IsHealthy() {
 			result = append(result, n)
 		}
 	}
