@@ -81,6 +81,8 @@ func isAdminPath(path string) bool {
 		return true
 	case path == "/tasks" || strings.HasPrefix(path, "/tasks/"):
 		return true
+	case path == "/cluster/status":
+		return true
 	default:
 		return false
 	}
