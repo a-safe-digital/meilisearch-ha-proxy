@@ -1,0 +1,5 @@
+FROM scratch
+COPY meili-ha-proxy /meili-ha-proxy
+COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+EXPOSE 7700 9090
+ENTRYPOINT ["/meili-ha-proxy"]
