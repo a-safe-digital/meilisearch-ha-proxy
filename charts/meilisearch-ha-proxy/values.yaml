@@ -32,7 +32,7 @@ meilisearch:
 
   image:
     repository: getmeili/meilisearch
-    tag: v1.12.8
+    tag: v1.30.0
     pullPolicy: IfNotPresent
 
   # -- MeiliSearch master key as a plain string (mutually exclusive with masterKeySecret)

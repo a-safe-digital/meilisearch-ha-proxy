@@ -27,7 +27,7 @@ services:
       start_period: 5s
 
   meili-primary:
-    image: getmeili/meilisearch:v1.12
+    image: getmeili/meilisearch:v1.30
     ports:
       - "7710:7700"
     environment:
@@ -42,7 +42,7 @@ services:
       retries: 20
 
   meili-replica-1:
-    image: getmeili/meilisearch:v1.12
+    image: getmeili/meilisearch:v1.30
     ports:
       - "7711:7700"
     environment:
@@ -57,7 +57,7 @@ services:
       retries: 20
 
   meili-replica-2:
-    image: getmeili/meilisearch:v1.12
+    image: getmeili/meilisearch:v1.30
     ports:
       - "7712:7700"
     environment:

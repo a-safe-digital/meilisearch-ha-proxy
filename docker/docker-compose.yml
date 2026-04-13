@@ -21,7 +21,7 @@ services:
         condition: service_healthy
 
   meili-0:
-    image: getmeili/meilisearch:v1.12
+    image: getmeili/meilisearch:v1.30
     ports:
       - "7710:7700"
     environment:
@@ -38,7 +38,7 @@ services:
       retries: 10
 
   meili-1:
-    image: getmeili/meilisearch:v1.12
+    image: getmeili/meilisearch:v1.30
     ports:
       - "7711:7700"
     environment:
@@ -55,7 +55,7 @@ services:
       retries: 10
 
   meili-2:
-    image: getmeili/meilisearch:v1.12
+    image: getmeili/meilisearch:v1.30
     ports:
       - "7712:7700"
     environment:
