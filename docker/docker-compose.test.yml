@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
       args:
-        TARGETARCH: ${TARGETARCH:-arm64}
+        TARGETARCH: ${TARGETARCH:-}
     ports:
       - "7700:7700"
       - "9090:9090"

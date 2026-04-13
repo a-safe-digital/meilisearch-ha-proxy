@@ -7,18 +7,38 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
+      - darwin
     goarch:
+      - amd64
       - arm64
     ldflags:
       - -s -w -X main.version={{.Version}}
 
 dockers:
   - image_templates:
-      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}"
-      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:latest"
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}-amd64"
+    use: buildx
     dockerfile: docker/Dockerfile.release
+    goarch: amd64
+    build_flag_templates:
+      - "--platform=linux/amd64"
+  - image_templates:
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}-arm64"
+    use: buildx
+    dockerfile: docker/Dockerfile.release
+    goarch: arm64
     build_flag_templates:
       - "--platform=linux/arm64"
+
+docker_manifests:
+  - name_template: "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}-amd64"
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/a-safe-digital/meilisearch-ha-proxy:latest"
+    image_templates:
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}-amd64"
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}-arm64"
 
 archives:
   - format: tar.gz
@@ -29,8 +49,33 @@ checksum:
 
 changelog:
   sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))?\!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\(.+\))?\!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
   filters:
     exclude:
       - "^docs:"
       - "^test:"
       - "^ci:"
+
+release:
+  github:
+    owner: a-safe-digital
+    name: meilisearch-ha-proxy
+  prerelease: auto
+  footer: |
+    ## Docker Images
+
+    ```bash
+    # Multi-arch (auto-selects amd64 or arm64)
+    docker pull ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}
+
+    # Helm chart
+    helm pull oci://ghcr.io/a-safe-digital/charts/meilisearch-ha-proxy --version {{ .Version }}
+    ```
