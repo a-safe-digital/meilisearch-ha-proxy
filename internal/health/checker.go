@@ -14,6 +14,7 @@ type Checker struct {
 	nodes    []*Node
 	interval time.Duration
 	timeout  time.Duration
+	failover *FailoverManager
 }
 
 // NewChecker creates a Checker from configuration.
@@ -72,6 +73,16 @@ func (c *Checker) HealthyNodes() []*Node {
 	return result
 }
 
+// SetFailoverManager sets the failover manager for automatic primary failover.
+func (c *Checker) SetFailoverManager(fm *FailoverManager) {
+	c.failover = fm
+}
+
+// Failover returns the failover manager, or nil if not set.
+func (c *Checker) Failover() *FailoverManager {
+	return c.failover
+}
+
 // Run starts the periodic health check loop. It blocks until ctx is cancelled.
 func (c *Checker) Run(ctx context.Context) {
 	slog.Info("health checker started",
@@ -106,4 +117,9 @@ func (c *Checker) checkAll(ctx context.Context) {
 		}(node)
 	}
 	wg.Wait()
+
+	// Evaluate failover after all health checks complete
+	if c.failover != nil {
+		c.failover.Evaluate()
+	}
 }
