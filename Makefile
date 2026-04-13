@@ -5,7 +5,7 @@ CMD := ./cmd/meili-ha-proxy
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS := -ldflags "-s -w -X main.version=$(VERSION)"
 
-.PHONY: all build build-arm64 test test-unit test-integration test-e2e lint fmt clean docker run help
+.PHONY: all build build-all test test-unit test-integration test-e2e lint fmt clean docker docker-multiarch run help
 
 all: lint test build
 
@@ -14,8 +14,11 @@ all: lint test build
 build:
 	go build $(LDFLAGS) -o bin/$(BINARY) $(CMD)
 
-build-arm64:
+build-all:
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY)-linux-amd64 $(CMD)
 	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY)-linux-arm64 $(CMD)
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY)-darwin-amd64 $(CMD)
+	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY)-darwin-arm64 $(CMD)
 
 ## Test
 
@@ -61,7 +64,10 @@ fmt:
 ## Docker
 
 docker:
-	docker build --platform linux/arm64 -f docker/Dockerfile -t $(BINARY) .
+	docker build -f docker/Dockerfile -t $(BINARY) .
+
+docker-multiarch:
+	docker buildx build --platform linux/amd64,linux/arm64 -f docker/Dockerfile -t $(BINARY) .
 
 docker-up:
 	docker compose -f docker/docker-compose.yml up -d --build
@@ -106,15 +112,16 @@ help:
 	@echo "MeiliSearch HA Proxy"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make build           Build the binary"
-	@echo "  make build-arm64     Cross-compile for linux/arm64"
+	@echo "  make build           Build binary for current platform"
+	@echo "  make build-all       Cross-compile for linux/darwin (amd64+arm64)"
 	@echo "  make test            Run unit tests (alias for test-unit)"
 	@echo "  make test-unit       Run unit tests with coverage"
 	@echo "  make test-integration Run integration tests (needs MeiliSearch)"
 	@echo "  make test-e2e        Run E2E tests (starts docker-compose)"
 	@echo "  make test-all        Run all test suites"
 	@echo "  make lint            Run golangci-lint"
-	@echo "  make docker          Build Docker image"
+	@echo "  make docker          Build Docker image (native arch)"
+	@echo "  make docker-multiarch Build multi-arch Docker image (amd64+arm64)"
 	@echo "  make docker-up       Start full dev stack (proxy + 3 MeiliSearch)"
 	@echo "  make docker-down     Stop dev stack"
 	@echo "  make docker-logs     Follow dev stack logs"

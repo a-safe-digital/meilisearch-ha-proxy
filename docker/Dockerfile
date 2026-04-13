@@ -6,14 +6,14 @@ RUN go mod download
 COPY . .
 
 ARG TARGETOS=linux
-ARG TARGETARCH=arm64
+ARG TARGETARCH
 ARG VERSION=dev
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags "-s -w -X main.version=${VERSION}" \
     -o /bin/meili-ha-proxy ./cmd/meili-ha-proxy/
 
-FROM alpine:3.20
+FROM --platform=${TARGETPLATFORM} alpine:3.20
 RUN apk --no-cache add ca-certificates wget
 COPY --from=builder /bin/meili-ha-proxy /meili-ha-proxy
 
