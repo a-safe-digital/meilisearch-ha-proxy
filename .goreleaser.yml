@@ -1,0 +1,36 @@
+version: 2
+
+builds:
+  - main: ./cmd/meili-ha-proxy
+    binary: meili-ha-proxy
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+dockers:
+  - image_templates:
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:{{ .Tag }}"
+      - "ghcr.io/a-safe-digital/meilisearch-ha-proxy:latest"
+    dockerfile: docker/Dockerfile.release
+    build_flag_templates:
+      - "--platform=linux/arm64"
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
