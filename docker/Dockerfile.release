@@ -1,8 +1,7 @@
 FROM alpine:3.20
-RUN apk --no-cache add ca-certificates && \
-    adduser -D -H -u 65534 proxy
+RUN apk --no-cache add ca-certificates
 COPY meili-ha-proxy /meili-ha-proxy
 
-USER proxy
+USER nobody
 EXPOSE 7700 9090
 ENTRYPOINT ["/meili-ha-proxy"]
