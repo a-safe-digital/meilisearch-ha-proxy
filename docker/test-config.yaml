@@ -1,0 +1,23 @@
+listen: ":7700"
+metrics_listen: ":9090"
+log_level: "debug"
+
+nodes:
+  - url: "http://meili-primary:7700"
+    api_key: "test-master-key"
+    role: primary
+  - url: "http://meili-replica-1:7700"
+    api_key: "test-master-key"
+    role: replica
+  - url: "http://meili-replica-2:7700"
+    api_key: "test-master-key"
+    role: replica
+
+health_check:
+  interval: 2s
+  timeout: 2s
+  unhealthy_threshold: 3
+  healthy_threshold: 2
+
+replication:
+  timeout: 10s

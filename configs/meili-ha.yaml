@@ -4,13 +4,13 @@ log_level: "info"
 
 nodes:
   - url: "http://meili-0:7700"
-    api_key: "masterKey"
+    api_key: "dev-master-key"
     role: primary
   - url: "http://meili-1:7700"
-    api_key: "masterKey"
+    api_key: "dev-master-key"
     role: replica
   - url: "http://meili-2:7700"
-    api_key: "masterKey"
+    api_key: "dev-master-key"
     role: replica
 
 health_check:
