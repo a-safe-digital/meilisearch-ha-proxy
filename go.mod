@@ -1,8 +1,12 @@
 module github.com/a-safe-digital/meilisearch-ha-proxy
 
-go 1.26.2
+go 1.24
 
-require gopkg.in/yaml.v3 v3.0.1
+require (
+	github.com/hashicorp/raft v1.7.3
+	github.com/hashicorp/raft-boltdb/v2 v2.3.1
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/armon/go-metrics v0.4.1 // indirect
@@ -13,8 +17,6 @@ require (
 	github.com/hashicorp/go-metrics v0.5.4 // indirect
 	github.com/hashicorp/go-msgpack/v2 v2.1.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
-	github.com/hashicorp/raft v1.7.3 // indirect
-	github.com/hashicorp/raft-boltdb/v2 v2.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
