@@ -84,7 +84,7 @@ func TestStateTransitions_UnhealthyStaysOnFailure(t *testing.T) {
 func TestCheckHealthyServer(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"available"}`))
+		_, _ = w.Write([]byte(`{"status":"available"}`))
 	}))
 	defer srv.Close()
 

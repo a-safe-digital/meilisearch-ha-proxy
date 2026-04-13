@@ -13,13 +13,13 @@ import (
 
 // Config is the root configuration for the HA proxy.
 type Config struct {
-	Listen        string        `yaml:"listen"`
-	MetricsListen string        `yaml:"metrics_listen"`
-	LogLevel      string        `yaml:"log_level"`
-	Nodes         []NodeConfig  `yaml:"nodes"`
-	HealthCheck   HealthConfig  `yaml:"health_check"`
-	Replication   ReplicConfig  `yaml:"replication"`
-	Raft          RaftConfig    `yaml:"raft"`
+	Listen        string       `yaml:"listen"`
+	MetricsListen string       `yaml:"metrics_listen"`
+	LogLevel      string       `yaml:"log_level"`
+	Nodes         []NodeConfig `yaml:"nodes"`
+	HealthCheck   HealthConfig `yaml:"health_check"`
+	Replication   ReplicConfig `yaml:"replication"`
+	Raft          RaftConfig   `yaml:"raft"`
 }
 
 // RaftConfig controls the Raft consensus layer (optional — disabled if NodeID is empty).

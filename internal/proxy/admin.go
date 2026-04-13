@@ -94,14 +94,14 @@ func (a *AdminHandler) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // NodeStatus represents a single node in the cluster status response.
 type NodeStatus struct {
-	URL             string `json:"url"`
-	Role            string `json:"role"`
-	State           string `json:"state"`
+	URL                string `json:"url"`
+	Role               string `json:"role"`
+	State              string `json:"state"`
 	LastReplicatedTask int64  `json:"lastReplicatedTask,omitempty"`
 }
 
@@ -141,5 +141,5 @@ func (a *AdminHandler) handleClusterStatus(w http.ResponseWriter, _ *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(status)
+	_ = json.NewEncoder(w).Encode(status)
 }

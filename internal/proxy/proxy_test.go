@@ -21,7 +21,7 @@ func TestReadRoundRobin(t *testing.T) {
 		servers[i] = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			hits[idx]++
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"hits":[]}`))
+			_, _ = w.Write([]byte(`{"hits":[]}`))
 		}))
 		defer servers[i].Close()
 	}
@@ -64,7 +64,7 @@ func TestReadRoundRobin(t *testing.T) {
 func TestReadSkipsUnhealthyNodes(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"hits":[]}`))
+		_, _ = w.Write([]byte(`{"hits":[]}`))
 	}))
 	defer srv.Close()
 
@@ -136,7 +136,7 @@ func TestWriteForwardsToPrimary(t *testing.T) {
 	primarySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		primaryHit = true
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"taskUid":42,"status":"enqueued"}`))
+		_, _ = w.Write([]byte(`{"taskUid":42,"status":"enqueued"}`))
 	}))
 	defer primarySrv.Close()
 
@@ -208,7 +208,7 @@ func TestResponseHeadersForwarded(t *testing.T) {
 		w.Header().Set("X-Custom-Header", "hello")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"hits":[]}`))
+		_, _ = w.Write([]byte(`{"hits":[]}`))
 	}))
 	defer srv.Close()
 
@@ -272,7 +272,7 @@ func TestRequestHeadersForwarded(t *testing.T) {
 func TestResponseBodyForwarded(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"hits":[{"id":1,"title":"Test Movie"}]}`))
+		_, _ = w.Write([]byte(`{"hits":[{"id":1,"title":"Test Movie"}]}`))
 	}))
 	defer srv.Close()
 

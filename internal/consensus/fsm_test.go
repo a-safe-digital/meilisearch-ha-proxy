@@ -195,6 +195,6 @@ type mockSink struct {
 	cancelled bool
 }
 
-func (s *mockSink) ID() string   { return "test" }
+func (s *mockSink) ID() string    { return "test" }
 func (s *mockSink) Cancel() error { s.cancelled = true; return nil }
 func (s *mockSink) Close() error  { return nil }

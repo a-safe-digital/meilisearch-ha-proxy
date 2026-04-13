@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"net/http"
 	"testing"
 )
@@ -63,7 +64,7 @@ func TestClassify(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest(tt.method, "http://localhost"+tt.path, nil)
+			req, err := http.NewRequestWithContext(context.Background(), tt.method, "http://localhost"+tt.path, nil)
 			if err != nil {
 				t.Fatalf("create request: %v", err)
 			}

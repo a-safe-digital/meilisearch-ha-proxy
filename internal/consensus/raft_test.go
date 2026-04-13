@@ -24,7 +24,7 @@ func TestRaftNode_SingleNodeCluster(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create raft node: %v", err)
 	}
-	defer node.Shutdown()
+	defer func() { _ = node.Shutdown() }()
 
 	// Wait for leader election (single node bootstraps as leader)
 	deadline := time.After(5 * time.Second)
@@ -59,7 +59,7 @@ func TestRaftNode_ApplyCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create raft node: %v", err)
 	}
-	defer node.Shutdown()
+	defer func() { _ = node.Shutdown() }()
 
 	// Wait for leader
 	deadline := time.After(5 * time.Second)
@@ -107,7 +107,7 @@ func TestRaftNode_MultipleCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create raft node: %v", err)
 	}
-	defer node.Shutdown()
+	defer func() { _ = node.Shutdown() }()
 
 	// Wait for leader
 	deadline := time.After(5 * time.Second)
@@ -162,7 +162,7 @@ func TestRaftNode_NonLeaderCannotApply(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create raft node: %v", err)
 	}
-	defer node.Shutdown()
+	defer func() { _ = node.Shutdown() }()
 
 	// Give it a moment, but it should NOT become leader
 	time.Sleep(500 * time.Millisecond)

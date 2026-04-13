@@ -12,8 +12,8 @@ type ReplicaLagProvider interface {
 
 // FailoverManager handles automatic primary failover and recovery.
 type FailoverManager struct {
-	checker    *Checker
-	lagSource  ReplicaLagProvider
+	checker   *Checker
+	lagSource ReplicaLagProvider
 
 	mu         sync.Mutex
 	failedOver bool // true if a replica has been promoted

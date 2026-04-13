@@ -142,7 +142,7 @@ func TestFailover_RecoverOriginalPrimary(t *testing.T) {
 	// Use a real HTTP server for the original primary so we can make it healthy again
 	primarySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"available"}`))
+		_, _ = w.Write([]byte(`{"status":"available"}`))
 	}))
 	defer primarySrv.Close()
 

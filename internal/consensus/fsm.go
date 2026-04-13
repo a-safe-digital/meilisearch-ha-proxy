@@ -155,12 +155,12 @@ type fsmSnapshot struct {
 func (s *fsmSnapshot) Persist(sink raft.SnapshotSink) error {
 	data, err := json.Marshal(s)
 	if err != nil {
-		sink.Cancel()
+		_ = sink.Cancel()
 		return fmt.Errorf("marshal snapshot: %w", err)
 	}
 
 	if _, err := sink.Write(data); err != nil {
-		sink.Cancel()
+		_ = sink.Cancel()
 		return fmt.Errorf("write snapshot: %w", err)
 	}
 
