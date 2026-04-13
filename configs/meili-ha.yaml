@@ -1,0 +1,25 @@
+listen: ":7700"
+metrics_listen: ":9090"
+log_level: "info"
+
+nodes:
+  - url: "http://meili-0:7700"
+    api_key: "masterKey"
+    role: primary
+  - url: "http://meili-1:7700"
+    api_key: "masterKey"
+    role: replica
+  - url: "http://meili-2:7700"
+    api_key: "masterKey"
+    role: replica
+
+health_check:
+  interval: 5s
+  timeout: 2s
+  unhealthy_threshold: 3
+  healthy_threshold: 2
+
+replication:
+  timeout: 30s
+  max_payload_size: "200MB"
+  buffer_dir: "/tmp/meili-ha-buffer"
