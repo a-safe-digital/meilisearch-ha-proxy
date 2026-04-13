@@ -33,3 +33,19 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  helm-publish:
+    name: Publish Helm Chart
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Package chart
+        run: helm package charts/meilisearch-ha-proxy/ --version ${GITHUB_REF_NAME#v} --app-version ${GITHUB_REF_NAME#v}
+      - name: Push chart
+        run: helm push meilisearch-ha-proxy-*.tgz oci://ghcr.io/a-safe-digital/charts
