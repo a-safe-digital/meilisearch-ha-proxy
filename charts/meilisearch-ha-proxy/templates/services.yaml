@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "meilisearch-ha-proxy.fullname" . }}
+  labels:
+    {{- include "meilisearch-ha-proxy.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "meilisearch-ha-proxy.selectorLabels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "meilisearch-ha-proxy.fullname" . }}-meilisearch-headless
+  labels:
+    {{- include "meilisearch-ha-proxy.meilisearchLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 7700
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "meilisearch-ha-proxy.meilisearchLabels" . | nindent 4 }}
