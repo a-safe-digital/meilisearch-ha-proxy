@@ -1,0 +1,45 @@
+services:
+  meili-primary:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: test-master-key
+      MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  meili-replica-1:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7701:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: test-master-key
+      MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  meili-replica-2:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7702:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: test-master-key
+      MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
