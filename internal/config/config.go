@@ -19,6 +19,16 @@ type Config struct {
 	Nodes         []NodeConfig  `yaml:"nodes"`
 	HealthCheck   HealthConfig  `yaml:"health_check"`
 	Replication   ReplicConfig  `yaml:"replication"`
+	Raft          RaftConfig    `yaml:"raft"`
+}
+
+// RaftConfig controls the Raft consensus layer (optional — disabled if NodeID is empty).
+type RaftConfig struct {
+	NodeID    string   `yaml:"node_id"`
+	BindAddr  string   `yaml:"bind_addr"`
+	DataDir   string   `yaml:"data_dir"`
+	Peers     []string `yaml:"peers"`
+	Bootstrap bool     `yaml:"bootstrap"`
 }
 
 // NodeConfig describes a single MeiliSearch backend node.
