@@ -115,7 +115,9 @@ func (r *Replicator) replicateToNode(node *health.Node, rec WriteRecord) {
 
 	r.totalSuccess.Add(1)
 	r.mu.Lock()
-	r.replicaLag[node.URL] = rec.TaskUID
+	if rec.TaskUID > r.replicaLag[node.URL] {
+		r.replicaLag[node.URL] = rec.TaskUID
+	}
 	r.mu.Unlock()
 
 	slog.Debug("replication: success",
