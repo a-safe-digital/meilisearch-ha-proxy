@@ -1,0 +1,85 @@
+# -- Number of proxy replicas (use 1 for non-Raft, 3 for Raft consensus)
+replicaCount: 1
+
+proxy:
+  image:
+    repository: ghcr.io/a-safe-digital/meilisearch-ha-proxy
+    tag: ""  # defaults to Chart appVersion
+    pullPolicy: IfNotPresent
+
+  # -- Proxy listen port
+  port: 7700
+  # -- Metrics port
+  metricsPort: 9090
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  # -- Node selector for proxy pods
+  nodeSelector: {}
+
+  # -- Tolerations for proxy pods
+  tolerations: []
+
+meilisearch:
+  # -- Number of MeiliSearch instances (1 primary + N-1 replicas)
+  replicas: 3
+
+  image:
+    repository: getmeili/meilisearch
+    tag: v1.12.8
+    pullPolicy: IfNotPresent
+
+  # -- MeiliSearch master key (required)
+  masterKey: ""
+
+  # -- Extra MeiliSearch CLI args
+  extraArgs:
+    - "--experimental-replication-parameters"
+
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  # -- Node selector for MeiliSearch pods
+  nodeSelector: {}
+
+  # -- Tolerations for MeiliSearch pods
+  tolerations: []
+
+healthCheck:
+  interval: 5s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 2
+
+replication:
+  timeout: 30s
+
+# -- Raft consensus (optional — set enabled: true for proxy-level HA)
+raft:
+  enabled: false
+  dataDir: /data/raft
+
+service:
+  type: ClusterIP
+  port: 7700
+
+# -- Pod monitor for Prometheus scraping
+podMonitor:
+  enabled: false
+  interval: 15s
