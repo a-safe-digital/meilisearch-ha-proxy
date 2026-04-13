@@ -17,6 +17,7 @@ type Node struct {
 
 	mu                 sync.RWMutex
 	state              State
+	originalRole       string // role from config, used during failover recovery
 	consecutiveFails   int
 	consecutiveSuccess int
 	lastCheck          time.Time
@@ -32,10 +33,25 @@ func NewNode(url, apiKey, role string, unhealthyThreshold, healthyThreshold int)
 		URL:                url,
 		APIKey:             apiKey,
 		Role:               role,
+		originalRole:       role,
 		state:              Healthy,
 		unhealthyThreshold: unhealthyThreshold,
 		healthyThreshold:   healthyThreshold,
 	}
+}
+
+// SetRole changes the node's role (used during failover).
+func (n *Node) SetRole(role string) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.Role = role
+}
+
+// OriginalRole returns the role from the initial configuration.
+func (n *Node) OriginalRole() string {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.originalRole
 }
 
 // State returns the current health state.
