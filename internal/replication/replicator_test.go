@@ -24,7 +24,7 @@ func TestReplicateAsync_SendsToReplicas(t *testing.T) {
 		gotTaskID = r.Header.Get("TaskId")
 		mu.Unlock()
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"taskUid":42}`))
+		_, _ = w.Write([]byte(`{"taskUid":42}`))
 	}))
 	defer replicaSrv.Close()
 

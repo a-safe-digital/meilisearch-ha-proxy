@@ -37,7 +37,7 @@ func TestHealthEndpoint_AllHealthy(t *testing.T) {
 	}
 
 	var resp ClusterHealth
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 
 	if resp.Status != "available" {
 		t.Errorf("expected status 'available', got %q", resp.Status)
@@ -82,7 +82,7 @@ func TestHealthEndpoint_PrimaryHealthyNoReplicas(t *testing.T) {
 	}
 
 	var resp ClusterHealth
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 
 	if resp.Status != "degraded" {
 		t.Errorf("expected status 'degraded', got %q", resp.Status)
@@ -121,7 +121,7 @@ func TestHealthEndpoint_PrimaryUnhealthy(t *testing.T) {
 	}
 
 	var resp ClusterHealth
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 
 	if resp.Status != "unavailable" {
 		t.Errorf("expected status 'unavailable', got %q", resp.Status)
@@ -155,7 +155,7 @@ func TestClusterStatusEndpoint(t *testing.T) {
 	}
 
 	var resp ClusterStatus
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 
 	if len(resp.Nodes) != 3 {
 		t.Fatalf("expected 3 nodes, got %d", len(resp.Nodes))

@@ -198,5 +198,7 @@ func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request, node *hea
 
 	// Use io.Copy with a buffer to stream response
 	buf := make([]byte, 32*1024)
-	io.CopyBuffer(w, resp.Body, buf)
+	if _, err := io.CopyBuffer(w, resp.Body, buf); err != nil {
+		slog.Error("stream response", "error", err)
+	}
 }

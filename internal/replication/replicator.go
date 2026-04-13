@@ -101,7 +101,7 @@ func (r *Replicator) replicateToNode(node *health.Node, rec WriteRecord) {
 		return
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
 		slog.Error("replication: unexpected status",

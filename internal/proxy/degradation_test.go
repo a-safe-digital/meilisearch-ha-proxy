@@ -26,11 +26,11 @@ func TestDegradation_AllReplicasDown(t *testing.T) {
 	primarySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && strings.Contains(r.URL.Path, "search") {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"hits":[{"id":1}]}`))
+			_, _ = w.Write([]byte(`{"hits":[{"id":1}]}`))
 			return
 		}
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"taskUid":1,"status":"enqueued"}`))
+		_, _ = w.Write([]byte(`{"taskUid":1,"status":"enqueued"}`))
 	}))
 	defer primarySrv.Close()
 
@@ -125,7 +125,7 @@ func TestDegradation_WritesAfterFailover(t *testing.T) {
 	promotedSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		promotedHit = true
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"taskUid":100,"status":"enqueued"}`))
+		_, _ = w.Write([]byte(`{"taskUid":100,"status":"enqueued"}`))
 	}))
 	defer promotedSrv.Close()
 
@@ -178,7 +178,7 @@ func TestDegradation_WritesAfterFailover(t *testing.T) {
 func TestDegradation_ReadsAfterFailover(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"hits":[]}`))
+		_, _ = w.Write([]byte(`{"hits":[]}`))
 	}))
 	defer srv.Close()
 
@@ -220,7 +220,7 @@ func TestDegradation_ReadsAfterFailover(t *testing.T) {
 func TestDegradation_ReplicationSkippedWhenNoReplicas(t *testing.T) {
 	primarySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"taskUid":5,"status":"enqueued"}`))
+		_, _ = w.Write([]byte(`{"taskUid":5,"status":"enqueued"}`))
 	}))
 	defer primarySrv.Close()
 
