@@ -1,0 +1,75 @@
+services:
+  proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "7700:7700"
+      - "9090:9090"
+    volumes:
+      - ../configs/meili-ha.yaml:/etc/meili-ha/config.yaml:ro
+    environment:
+      MEILI_HA_CONFIG: /etc/meili-ha/config.yaml
+    depends_on:
+      meili-0:
+        condition: service_healthy
+      meili-1:
+        condition: service_healthy
+      meili-2:
+        condition: service_healthy
+
+  meili-0:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7710:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: dev-master-key
+      MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+    volumes:
+      - meili-0-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  meili-1:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7711:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: dev-master-key
+      MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+    volumes:
+      - meili-1-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  meili-2:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7712:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: dev-master-key
+      MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+    volumes:
+      - meili-2-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  meili-0-data:
+  meili-1-data:
+  meili-2-data:

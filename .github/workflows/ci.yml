@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  unit-test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run unit tests
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/...
+      - name: Upload coverage
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.out
+          fail_ci_if_error: false
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      meili-primary:
+        image: getmeili/meilisearch:v1.12
+        ports:
+          - 7700:7700
+        env:
+          MEILI_ENV: development
+          MEILI_NO_ANALYTICS: "true"
+          MEILI_MASTER_KEY: test-master-key
+          MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+      meili-replica-1:
+        image: getmeili/meilisearch:v1.12
+        ports:
+          - 7701:7700
+        env:
+          MEILI_ENV: development
+          MEILI_NO_ANALYTICS: "true"
+          MEILI_MASTER_KEY: test-master-key
+          MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+      meili-replica-2:
+        image: getmeili/meilisearch:v1.12
+        ports:
+          - 7702:7700
+        env:
+          MEILI_ENV: development
+          MEILI_NO_ANALYTICS: "true"
+          MEILI_MASTER_KEY: test-master-key
+          MEILI_EXPERIMENTAL_REPLICATION_PARAMETERS: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Wait for MeiliSearch
+        run: |
+          for port in 7700 7701 7702; do
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:$port/health > /dev/null 2>&1; then
+                echo "MeiliSearch on port $port is ready"
+                break
+              fi
+              sleep 1
+            done
+          done
+      - name: Run integration tests
+        env:
+          MEILI_PRIMARY_URL: http://localhost:7700
+          MEILI_REPLICA1_URL: http://localhost:7701
+          MEILI_REPLICA2_URL: http://localhost:7702
+          MEILI_API_KEY: test-master-key
+        run: go test -race -tags=integration -v ./test/integration/...
+
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Start E2E environment
+        run: docker compose -f docker/docker-compose.test.yml up -d --wait --wait-timeout 60
+      - name: Run E2E tests
+        run: go test -race -tags=e2e -v -timeout 5m ./test/e2e/...
+      - name: Collect logs
+        if: failure()
+        run: docker compose -f docker/docker-compose.test.yml logs
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker/docker-compose.test.yml down -v
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build (linux/arm64)
+        run: GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o meili-ha-proxy ./cmd/meili-ha-proxy/
+      - name: Build Docker image
+        run: docker build --platform linux/arm64 -f docker/Dockerfile -t meili-ha-proxy:test .
