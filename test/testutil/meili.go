@@ -214,6 +214,34 @@ func (c *MeiliClient) GetClusterHealth(t *testing.T) (int, map[string]interface{
 	return resp.StatusCode, result
 }
 
+// SwapIndexes swaps two indexes via raw HTTP (avoids SDK compatibility issues).
+func (c *MeiliClient) SwapIndexes(t *testing.T, indexA, indexB string) int64 {
+	t.Helper()
+	body := fmt.Sprintf(`[{"indexes":[%q,%q]}]`, indexA, indexB)
+	req, _ := http.NewRequest(http.MethodPost, c.BaseURL+"/swap-indexes", bytes.NewReader([]byte(body)))
+	req.Header.Set("Content-Type", "application/json")
+	if c.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	}
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		t.Fatalf("swap indexes: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusAccepted {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		t.Fatalf("swap indexes: expected 202, got %d: %s", resp.StatusCode, bodyBytes)
+	}
+
+	var result struct {
+		TaskUID int64 `json:"taskUid"`
+	}
+	json.NewDecoder(resp.Body).Decode(&result)
+	return result.TaskUID
+}
+
 // DeleteIndex deletes an index (for cleanup).
 func (c *MeiliClient) DeleteIndex(t *testing.T, index string) {
 	t.Helper()

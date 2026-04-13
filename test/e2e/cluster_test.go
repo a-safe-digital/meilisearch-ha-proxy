@@ -463,6 +463,7 @@ func TestE2E_SDK_Keys(t *testing.T) {
 func TestE2E_SDK_SwapIndexes(t *testing.T) {
 	waitForProxy(t)
 	client := newSDKClient()
+	httpClient := testutil.NewMeiliClient(proxyURL(), proxyAPIKey())
 	indexA := "e2e-sdk-swap-a"
 	indexB := "e2e-sdk-swap-b"
 	defer cleanupIndex(client, indexA)
@@ -489,14 +490,10 @@ func TestE2E_SDK_SwapIndexes(t *testing.T) {
 	searchWithRetry(t, client, indexA, "Index A", 1, 15*time.Second)
 	searchWithRetry(t, client, indexB, "Index B", 1, 15*time.Second)
 
-	// Swap indexes through proxy
-	taskInfo, err = client.SwapIndexes([]*meilisearch.SwapIndexesParams{
-		{Indexes: []string{indexA, indexB}},
-	})
-	if err != nil {
-		t.Fatalf("swap indexes: %v", err)
-	}
-	waitForTask(t, client, taskInfo.TaskUID)
+	// Swap indexes through proxy (use raw HTTP — SDK v0.36.2 sends
+	// a "rename" field that MeiliSearch <1.13 rejects as unknown)
+	swapTaskUID := httpClient.SwapIndexes(t, indexA, indexB)
+	waitForTask(t, client, swapTaskUID)
 
 	// Verify swap — Index A should now have B's content
 	deadline := time.After(30 * time.Second)
