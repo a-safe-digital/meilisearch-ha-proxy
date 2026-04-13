@@ -24,17 +24,38 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: meilisearch
           image: "{{ .Values.meilisearch.image.repository }}:{{ .Values.meilisearch.image.tag }}"
           imagePullPolicy: {{ .Values.meilisearch.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: MEILI_MASTER_KEY
-              value: "{{ .Values.meilisearch.masterKey }}"
+              {{- if and .Values.meilisearch.masterKeySecret .Values.meilisearch.masterKeySecret.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.meilisearch.masterKeySecret.name }}
+                  key: {{ .Values.meilisearch.masterKeySecret.key | default "MEILI_MASTER_KEY" }}
+              {{- else }}
+              value: {{ required "meilisearch.masterKey or meilisearch.masterKeySecret.name is required" .Values.meilisearch.masterKey | quote }}
+              {{- end }}
             - name: MEILI_DB_PATH
               value: /meili_data/data.ms
             - name: MEILI_ENV
               value: production
+            {{- range $key, $value := .Values.meilisearch.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           args:
             {{- range .Values.meilisearch.extraArgs }}
             - {{ . | quote }}

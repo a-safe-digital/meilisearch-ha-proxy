@@ -64,7 +64,7 @@ func (a *AdminHandler) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	healthyReplicas := a.checker.HealthyReplicas()
 	totalReplicas := 0
 	for _, n := range a.checker.Nodes() {
-		if n.Role == "replica" {
+		if n.GetRole() == "replica" {
 			totalReplicas++
 		}
 	}
@@ -131,7 +131,7 @@ func (a *AdminHandler) handleClusterStatus(w http.ResponseWriter, _ *http.Reques
 	for i, n := range nodes {
 		status.Nodes[i] = NodeStatus{
 			URL:   n.URL,
-			Role:  n.Role,
+			Role:  n.GetRole(),
 			State: n.State().String(),
 		}
 		if lag != nil {

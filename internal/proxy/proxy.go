@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync/atomic"
+	"time"
 
 	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/health"
 	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/replication"
@@ -17,12 +18,20 @@ type Proxy struct {
 	roundRobin   atomic.Uint64
 	replicator   *replication.Replicator
 	adminHandler http.Handler
+	httpClient   *http.Client
 }
 
 // New creates a Proxy with the given health checker.
 func New(checker *health.Checker) *Proxy {
 	return &Proxy{
 		checker: checker,
+		httpClient: &http.Client{
+			Timeout: 120 * time.Second,
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 10,
+				IdleConnTimeout:     90 * time.Second,
+			},
+		},
 	}
 }
 
@@ -127,6 +136,9 @@ func (rr *responseRecorder) WriteHeader(code int) {
 }
 
 func (rr *responseRecorder) Write(b []byte) (int, error) {
+	if rr.statusCode == 0 {
+		rr.statusCode = http.StatusOK
+	}
 	rr.body = append(rr.body, b...)
 	return rr.ResponseWriter.Write(b)
 }
@@ -180,7 +192,7 @@ func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request, node *hea
 		outReq.Header.Set("Authorization", "Bearer "+node.APIKey)
 	}
 
-	resp, err := http.DefaultClient.Do(outReq)
+	resp, err := p.httpClient.Do(outReq)
 	if err != nil {
 		slog.Error("forward request", "url", node.URL, "error", err)
 		http.Error(w, `{"message":"backend unavailable","code":"service_unavailable"}`, http.StatusBadGateway)

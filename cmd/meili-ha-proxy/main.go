@@ -16,6 +16,8 @@ import (
 	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/replication"
 )
 
+var version = "dev"
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -32,6 +34,7 @@ func main() {
 	}
 
 	slog.Info("meilisearch-ha-proxy starting",
+		"version", version,
 		"listen", cfg.Listen,
 		"nodes", len(cfg.Nodes),
 	)
@@ -58,23 +61,32 @@ func main() {
 	p.SetReplicator(replicator)
 	p.SetAdminHandler(proxy.NewAdminHandler(checker, replicator))
 
-	// Start HTTP server
+	// Start HTTP server with timeouts to prevent slowloris and connection exhaustion
 	server := &http.Server{
-		Addr:    cfg.Listen,
-		Handler: p,
+		Addr:              cfg.Listen,
+		Handler:           p,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      120 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
+	errCh := make(chan error, 1)
 	go func() {
 		slog.Info("listening", "addr", cfg.Listen)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("server error", "error", err)
-			os.Exit(1)
+			errCh <- err
 		}
 	}()
 
-	<-ctx.Done()
-	fmt.Println() // clean line after ^C
-	slog.Info("shutting down")
+	select {
+	case <-ctx.Done():
+		fmt.Println() // clean line after ^C
+		slog.Info("shutting down")
+	case err := <-errCh:
+		slog.Error("server error", "error", err)
+		cancel()
+	}
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()

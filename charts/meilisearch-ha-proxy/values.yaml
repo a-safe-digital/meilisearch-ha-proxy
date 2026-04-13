@@ -35,8 +35,20 @@ meilisearch:
     tag: v1.12.8
     pullPolicy: IfNotPresent
 
-  # -- MeiliSearch master key (required)
+  # -- MeiliSearch master key as a plain string (mutually exclusive with masterKeySecret)
   masterKey: ""
+
+  # -- Reference an existing Kubernetes Secret for the master key (preferred over masterKey)
+  masterKeySecret:
+    # -- Name of the existing Secret
+    name: ""
+    # -- Key within the Secret
+    key: MEILI_MASTER_KEY
+
+  # -- Extra environment variables for MeiliSearch pods (key-value map)
+  env: {}
+  #   MEILI_NO_ANALYTICS: "true"
+  #   MEILI_EXPERIMENTAL_ENABLE_METRICS: "true"
 
   # -- Extra MeiliSearch CLI args
   extraArgs:
@@ -69,6 +81,7 @@ healthCheck:
 
 replication:
   timeout: 30s
+  maxPayloadSize: ""
 
 # -- Raft consensus (optional — set enabled: true for proxy-level HA)
 raft:

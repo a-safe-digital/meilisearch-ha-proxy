@@ -108,6 +108,9 @@ jobs:
           TARGETARCH: amd64
         run: docker compose -f docker/docker-compose.test.yml up -d --wait --wait-timeout 60
       - name: Run E2E tests
+        env:
+          PROXY_URL: http://localhost:7700
+          PROXY_API_KEY: test-master-key
         run: go test -race -tags=e2e -v -timeout 5m ./test/e2e/...
       - name: Collect logs
         if: failure()
@@ -157,7 +160,7 @@ jobs:
   publish-image:
     name: Publish Container Image
     runs-on: ubuntu-latest
-    needs: [lint, unit-test, build, build-docker]
+    needs: [lint, unit-test, integration-test, e2e-test, build, build-docker]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
