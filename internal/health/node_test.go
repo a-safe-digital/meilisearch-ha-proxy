@@ -182,6 +182,84 @@ func TestLastCheckUpdated(t *testing.T) {
 	}
 }
 
+func TestCheckNoAuthHeader_WhenEmptyKey(t *testing.T) {
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	n := NewNode(srv.URL, "", "primary", 3, 2)
+	n.Check(context.Background(), 2*time.Second)
+
+	if gotAuth != "" {
+		t.Errorf("expected no Authorization header, got %q", gotAuth)
+	}
+}
+
+func TestGetSetRole(t *testing.T) {
+	n := NewNode("http://test:7700", "", "primary", 3, 2)
+	if n.GetRole() != "primary" {
+		t.Errorf("expected primary, got %s", n.GetRole())
+	}
+
+	n.SetRole("replica")
+	if n.GetRole() != "replica" {
+		t.Errorf("expected replica, got %s", n.GetRole())
+	}
+}
+
+func TestOriginalRole(t *testing.T) {
+	n := NewNode("http://test:7700", "", "primary", 3, 2)
+	n.SetRole("replica") // simulate failover demotion
+	if n.OriginalRole() != "primary" {
+		t.Errorf("expected original role 'primary', got %s", n.OriginalRole())
+	}
+}
+
+func TestConcurrentGetSetRole(t *testing.T) {
+	n := NewNode("http://test:7700", "", "primary", 3, 2)
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			n.SetRole("replica")
+		}()
+		go func() {
+			defer wg.Done()
+			_ = n.GetRole()
+		}()
+	}
+	wg.Wait()
+}
+
+func TestInterleavedFailureRecovery(t *testing.T) {
+	n := NewNode("http://test:7700", "", "primary", 3, 2)
+
+	// Drive to Unhealthy
+	for i := 0; i < 3; i++ {
+		n.recordFailure(errTest)
+	}
+	if n.State() != Unhealthy {
+		t.Fatalf("expected Unhealthy, got %s", n.State())
+	}
+
+	// One success → Suspect
+	n.recordSuccess()
+	if n.State() != Suspect {
+		t.Fatalf("expected Suspect, got %s", n.State())
+	}
+
+	// Failure during recovery → back through Suspect
+	n.recordFailure(errTest)
+	// Should go back to Suspect (since we had a success which reset fails to 0, now fails=1)
+	if n.State() != Suspect {
+		t.Errorf("expected Suspect after interleaved failure, got %s", n.State())
+	}
+}
+
 var errTest = errString("test error")
 
 type errString string
