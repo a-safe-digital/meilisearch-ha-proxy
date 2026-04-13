@@ -1,0 +1,16 @@
+{{- if .Values.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "meilisearch-ha-proxy.fullname" . }}
+  labels:
+    {{- include "meilisearch-ha-proxy.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "meilisearch-ha-proxy.selectorLabels" . | nindent 6 }}
+  podMetricsEndpoints:
+    - port: metrics
+      interval: {{ .Values.podMonitor.interval }}
+      path: /metrics
+{{- end }}
