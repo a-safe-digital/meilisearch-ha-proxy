@@ -8,19 +8,15 @@ import (
 	"sync/atomic"
 
 	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/health"
+	"github.com/a-safe-digital/meilisearch-ha-proxy/internal/replication"
 )
 
 // Proxy is the main HTTP handler that routes requests to MeiliSearch backends.
 type Proxy struct {
 	checker      *health.Checker
 	roundRobin   atomic.Uint64
-	replicator   Replicator
+	replicator   *replication.Replicator
 	adminHandler http.Handler
-}
-
-// Replicator handles write replication to follower nodes.
-type Replicator interface {
-	ReplicateWrite(r *http.Request, body []byte, taskUID int64) error
 }
 
 // New creates a Proxy with the given health checker.
@@ -31,7 +27,7 @@ func New(checker *health.Checker) *Proxy {
 }
 
 // SetReplicator sets the write replicator.
-func (p *Proxy) SetReplicator(r Replicator) {
+func (p *Proxy) SetReplicator(r *replication.Replicator) {
 	p.replicator = r
 }
 
@@ -79,7 +75,55 @@ func (p *Proxy) handleWrite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p.forwardRequest(w, r, primary)
+	// Capture request body for replication before forwarding
+	var capturedBody []byte
+	if p.replicator != nil {
+		body, err := replication.CaptureWrite(r)
+		if err != nil {
+			slog.Error("capture write body", "error", err)
+			http.Error(w, `{"message":"internal error","code":"internal_error"}`, http.StatusInternalServerError)
+			return
+		}
+		capturedBody = body
+	}
+
+	// Forward to primary and capture response for taskUid extraction
+	recorder := &responseRecorder{ResponseWriter: w}
+	p.forwardRequest(recorder, r, primary)
+
+	// Trigger async replication if we got a 202 response
+	if p.replicator != nil && recorder.statusCode == http.StatusAccepted {
+		taskUID, err := replication.ExtractTaskUID(recorder.body)
+		if err != nil {
+			slog.Warn("extract taskUid for replication", "error", err)
+			return
+		}
+
+		p.replicator.ReplicateAsync(replication.WriteRecord{
+			Method:  r.Method,
+			Path:    r.URL.Path,
+			Headers: r.Header.Clone(),
+			Body:    capturedBody,
+			TaskUID: taskUID,
+		})
+	}
+}
+
+// responseRecorder wraps http.ResponseWriter to capture status code and body.
+type responseRecorder struct {
+	http.ResponseWriter
+	statusCode int
+	body       []byte
+}
+
+func (rr *responseRecorder) WriteHeader(code int) {
+	rr.statusCode = code
+	rr.ResponseWriter.WriteHeader(code)
+}
+
+func (rr *responseRecorder) Write(b []byte) (int, error) {
+	rr.body = append(rr.body, b...)
+	return rr.ResponseWriter.Write(b)
 }
 
 func (p *Proxy) handleAdmin(w http.ResponseWriter, r *http.Request) {
@@ -143,5 +187,8 @@ func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request, node *hea
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+
+	// Use io.Copy with a buffer to stream response
+	buf := make([]byte, 32*1024)
+	io.CopyBuffer(w, resp.Body, buf)
 }
